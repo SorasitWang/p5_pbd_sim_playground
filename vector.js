@@ -1,6 +1,8 @@
 class Vec2 {
 
     constructor(pos) {
+        if (pos.constructor.name == "Vec2")
+            this.val = pos.val
         this.val = pos
     }
 

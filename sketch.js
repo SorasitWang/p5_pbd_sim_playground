@@ -20,170 +20,6 @@ function isColGround(p, x, offset = 0) {
 function isColGroundNormal(pos, offset) {
   return ground.distance(pos) < dotRadius
 }
-function updateDistanceConstraintPosition(v1, v2, d, k) {
-
-  let mag = modVec2(new Vec2(v1.p), new Vec2(v2.p));
-  // if (mag >= 3*d)
-
-  //     return false
-  k = 0.99
-  let s1 = 1.0 * (-v1.w) / (v1.w + v2.w) * (mag - d) / mag;
-  let s2 = 1.0 * v2.w / (v1.w + v2.w) * (mag - d) / mag;
-  v1.p[0] += s1 * (v1.p[0] - v2.p[0]) * k;
-  v1.p[1] += s1 * (v1.p[1] - v2.p[1]) * k;
-  v2.p[0] += s2 * (v1.p[0] - v2.p[0]) * k;
-  v2.p[1] += s2 * (v1.p[1] - v2.p[1]) * k;
-
-  return true
-}
-function updatePositionConstraintPosition(v, anchor, d, k) {
-
-  //console.log(v.p,anchor,k)
-  let mag = modVec2(new Vec2(v.p), new Vec2(anchor));
-  let s = (mag - d) / mag;
-  v.p[0] -= s * (v.p[0] - anchor[0]) * k;
-  v.p[1] -= s * (v.p[1] - anchor[1]) * k;
-  return true
-
-}
-
-function colSphere(obs, vertex) {
-  let center = new Vec2(obs.x)
-  let pos = new Vec2(vertex.p)
-  if (modVec2(center, pos) < obs.rad) {
-    //console.log("col")
-    //       
-    let dir = normalizeVec2(subVec2(pos, center))
-    //console.log(dir.size())
-    let newPos = addVec2(center, mulSc(dir, obs.rad))
-    let v = new Vec2(vertex.p)
-    let diff = subVec2(newPos, v)
-    //console.log(center.val,mouseX,mouseY)
-    vertex.p = addVec2(v, mulSc(diff, 1)).val
-  }
-}
-
-function colSelf(v1, v2) {
-  let v1_ = new Vec2(v1.p)
-  let v2_ = new Vec2(v2.p)
-
-  if (modVec2(v1_, v2_) < 2 * dotRadius) {
-    let dir = normalizeVec2(subVec2(v2_, v1_))
-    let newPos = addVec2(v1_, mulSc(dir, 2 * dotRadius))
-    let diff = mulSc(subVec2(newPos, v2_), 0.5)
-    v1.p = addVec2(v1_, mulSc(diff, -0.5)).val
-    v2.p = addVec2(v2_, mulSc(diff, 0.5)).val
-  }
-}
-function updateColConstraintPosition(k) {
-
-  c++
-  for (let i = 0; i < verts.length; i++) {
-    // check ground
-
-    // if (c%100 ==0 && i==verts.length-1){
-    //   console.log(verts[i].p,ground.side(verts[i].p),verts[i].x,ground.side(verts[i].x))
-    // }
-    if (isColGround(verts[i].p, verts[i].x)) {
-
-      verts[i].p = ground.closetPoint(verts[i].p, dotRadius)
-    }
-
-
-
-    // col with obstruct
-    colSphere(obs, verts[i])
-
-    // self collision
-    for (let j = i + 1; j < verts.length; j++) {
-      colSelf(verts[i], verts[j]);
-    }
-
-
-  }
-
-
-  return true
-}
-let c = 0
-function updateBendingConstraintPosition1(v1, v2, v3, angle, stiffness, dd) {
-  let v1_ = new Vec2(v1.p);
-  let v2_ = new Vec2(v2.p);
-  let v3_ = new Vec2(v3.p);
-  angle = radians(angle)
-  let allLength = 1 / (v1_.size() * v1_.size() + v2_.size() * v2_.size() + v3_.size() * v3_.size())
-  let allW = 1 / (v1.w + v2.w + v3.w)
-  // let n1 = normalizeVec2(crossVec2(v1_,v2_))
-  // let n2 = normalizeVec2(crossVec2(v1_,v3_))
-  // let d = dotVec2(n1,n2)
-  let n1 = normalVec2(v1_, v2_)
-  let n2 = normalVec2(v1_, v3_)
-  let d = dotVec2(n1, n2)
-  if (d < 1 + 0.00001 && d >= 1) d = 1
-  let s1 = -3 * v1.w * allW * Math.sqrt(1 - d * d) * (Math.acos(d) - angle) * stiffness * allLength
-  let s2 = -3 * v2.w * allW * Math.sqrt(1 - d * d) * (Math.acos(d) - angle) * stiffness * allLength
-  let s3 = -3 * v3.w * allW * Math.sqrt(1 - d * d) * (Math.acos(d) - angle) * stiffness * allLength
-
-  //if (d < 1) console.log(d)
-  v1.p = addVec2(mulSc(v1_, s1), v1_).val
-  v2.p = addVec2(mulSc(v2_, s2), v2_).val
-  v3.p = addVec2(mulSc(v3_, s3), v3_).val
-  return true
-}
-
-function updateBendingConstraintPosition(v1, v2, v3, angle, stiffness, dd) {
-
-  let v1_ = new Vec2(v1.p)
-  let v2_ = new Vec2(v2.p)
-  let v3_ = new Vec2(v3.p)
-  let center = mulSc(addVec2(addVec2(v1_, v2_), v3_), 0.333333)
-  let dirCenter = subVec2(v3_, center)
-
-  let distCenter = dirCenter.size()
-  let diff = 1 - (dd / distCenter)
-  let ww = 1 / (v1.m + v1.m + v1.m)
-  let mass = v1.m
-  let dirForce = mulSc(dirCenter, diff)
-  let fa = mulSc(dirForce, stiffness * (2 * mass * ww));
-  //if (c++%500 ==0)
-  //console.log(fa)
-  v1.p = addVec2(fa, v1_).val;
-
-  let fb = mulSc(dirForce, stiffness * (2 * mass * ww));
-  v2.p = addVec2(fb, v2_).val;
-
-  let fc = mulSc(dirForce, -stiffness * (4 * mass * ww));
-  v3.p = addVec2(fc, v3_).val;
-  return true
-}
-
-function makeTwoVertexDistanceConstraint(v1, v2, d, stiffness) {
-  return new Constraint(
-    "distance",
-    (verts) => updateDistanceConstraintPosition(verts[v1], verts[v2], d, stiffness),
-    stiffness);
-}
-
-function makePositionConstraint(v, anchor, d, stiffness) {
-  return new Constraint(
-    "position",
-    (verts) => updatePositionConstraintPosition(v, anchorMouse, d, stiffness),
-    stiffness);
-}
-function makeColConstraint(stiffness) {
-  return new Constraint(
-    "ground",
-    (verts) => updateColConstraintPosition(stiffness),
-    stiffness);
-}
-
-
-function makeBendintConsraints(v1, v2, v3, angle, stiffness, d) {
-  return new Constraint(
-    "bending",
-    (verts) => updateBendingConstraintPosition(verts[v1], verts[v2], verts[v3], angle, stiffness, d),
-    stiffness);
-}
 
 
 // --------------- application --------------- //
@@ -198,16 +34,18 @@ let isInitialized = false;
 let dragIndex = -1;
 let lastUpdateTime;
 const verts = [];
-let anchorMouse = [400, 600];
+let anchorMouse = new Vec2([400, 600]);
 
 const groundH = 300;
 const ground = new Line([0, screenY - 300], [screenX, screenY - 200], [0, 0])
 const pond = new Pond([0, screenY - 400], [screenX, screenY - 400], [0, 0])
 const ball = new Sphere([0, 0], 20)
-const sphere_ = new Sphere([screenX / 2, 0], 40)
+const sphere_ = new Vertex([screenX / 2, 0], [0, 0], 10, [0, 0], 40)
 const obs = new Sphere([500, 500], 30)
+const net = new Net(20, [100, 100], [700, 100])
+const envConstraints = []
 let state = 0;
-const SCALE_TIME = 0.001
+
 function initialize() {
   // creates a vertex matrix
 
@@ -222,21 +60,32 @@ function initialize() {
 
   //    }
 
-
+  // rope
   for (let i = 0; i < N; i++) {
     verts.push(new Vertex([400, 400 + (-i * 10)], [0.0, 0.0], dotMass, [0.0, 0.0]))
     if (i < N - 1)
-      constraints.push(makeTwoVertexDistanceConstraint(i, i + 1, D, K));
+      constraints.push(makeTwoVertexDistanceConstraint(verts, i, i + 1, D, K));
   }
 
   for (let i = 1; i < N - 1; i++) {
     constraints.push(makeBendintConsraints(i - 1, i, i + 1, 180, 0.1, D));
   }
-
-  constraints.push(makePositionConstraint(verts[0], anchorMouse, 100, K));
-  constraints.push(makeColConstraint(1));
+  constraints.push(makeMousePosConstraint(verts[0], anchorMouse, 100, K));
+  constraints.push(makeColConstraint(verts, 1));
 
   setAnchor([400, 400])
+
+
+  // net
+
+  net.constraints.push(makePositionConstraint(net.particles[0], net.posStart, 0, K));
+  net.constraints.push(makeMousePosConstraint(net.particles[net.particles.length - 1], anchorMouse, 0, K));
+  net.constraints.push(makeColConstraint(net.particles, 1));
+  for (let i = 0; i < net.particles.length - 1; i++)
+    net.constraints.push(makeTwoVertexDistanceConstraint(net.particles, i, i + 1, net.interval, 1));
+
+
+  envConstraints.push(makeEnvColConstraint([net.particles, verts], sphere_, 1))
 
   isInitialized = true;
 }
@@ -297,17 +146,24 @@ function calExternalForce() {
   for (let i = 0; i < N; i++) {
     let tmp = new Vec2([0, 0])
     tmp.addVec2(pond.calBuoyantForce(verts[i]));
-    tmp.addVec2(pond.calDragForce(verts[i]))
+    tmp.addVec2(pond.calDragForce(verts[i], deltaTime * SCALE_TIME))
     if (i == N - 1) {
-      //console.log(pond.calDragForce(verts[i]).val,verts[i].v)
+      // console.log(pond.calDragForce(verts[i], deltaTime * SCALE_TIME).val)
     }
     forces[i].addVec2(tmp)
   }
-
+  gForce = new Vec2([0, G * net.pMass])
   for (let i = 0; i < N; i++) {
     forces[i] = addVec2(forces[i], gForce)
     verts[i].setForce(forces[i].val);
   }
+
+  for (let i = 0; i < net.particles.length; i++) {
+    //console.log(net.particles[0])
+    net.particles[i].setForce(gForce.val)
+  }
+
+
 
 }
 
@@ -315,16 +171,17 @@ function draw() {
   clear();
   textSize(20);
   text(sphere_.p, 500, 30);
-
   deltaTime = millis() - lastUpdateTime;
-
+  // console.log(net.particles[0].x, net.particles[1].x, net.particles[2].x)
   lastUpdateTime += deltaTime;
 
   calExternalForce();
-
-  PBDUpdate(verts, constraints, deltaTime * SCALE_TIME, 500);
-
   freeFall(deltaTime * SCALE_TIME);
+  //PBDUpdate(verts, constraints, deltaTime * SCALE_TIME, 300);
+  PBDUpdate([sphere_].concat(net.particles), net.constraints, deltaTime * SCALE_TIME, 300);
+  //PBDUpdate(, envConstraints, deltaTime * SCALE_TIME, 100);
+
+
   stroke(200);
 
   for (let i = 0; i < N; i++) {
@@ -361,28 +218,41 @@ function draw() {
     }
   }
 
+  for (let i = 0; i < net.particles.length - 1; i++) {
+
+    ellipse(net.particles[i].x[0], net.particles[i].x[1], 2 * net.pRad, 2 * net.pRad)
+    line(net.particles[i].x[0], net.particles[i].x[1], net.particles[i + 1].x[0], net.particles[i + 1].x[1])
+  }
+  ellipse(net.particles[net.particles.length - 1].x[0], net.particles[net.particles.length - 1].x[1], 2 * net.pRad, 2 * net.pRad)
+
 
 }
 
 function freeFall(dt) {
   //sphere_.v[0] += G*dt
-  let velo = new Vec2(sphere_.v)
-  let pos = new Vec2(sphere_.x)
-  const dragForce = pond.calDragForce(sphere_);
-
-  velo.addVec2(new Vec2([0, G * dt]))
+  //let velo = new Vec2(sphere_.v)
+  //let pos = new Vec2(sphere_.x)
+  const force = new Vec2([0, 0])
+  const dragForce = pond.calDragForce(sphere_, dt);
+  //console.log(dragForce.val)
+  /*velo.addVec2(new Vec2([0, G * dt]))
   velo.addVec2(mulSc(pond.calBuoyantForce(sphere_), sphere_.w * dt));
   velo.addVec2(mulSc(dragForce, sphere_.w * dt))
+  */
+  force.addVec2(new Vec2([0, G * sphere_.m]))
+  force.addVec2(pond.calBuoyantForce(sphere_))
+  force.addVec2(dragForce)
+  sphere_.setForce(force.val)
+  //console.log(sphere_.v)
+  //console.log(dragForce.val, velo.val)
 
-  console.log(dragForce.val, velo.val)
-
-  pos.addVec2(mulSc(velo, dt))
+  //pos.addVec2(mulSc(velo, dt))
   //console.log(velo,dt)
   //return
   // sphere_.x[0] += sphere_.v[0]*dt
   // sphere_.x[1] += sphere_.v[1]*dt
-  sphere_.v = velo.val
-  sphere_.x = pos.val
+  //sphere_.v = velo.val
+  //sphere_.x = pos.val
 }
 function mouseMoved() {
   if (isInitialized) {
@@ -411,11 +281,11 @@ function keyPressed() {
 
 function setAnchor(pos) {
 
-  anchorMouse = pos
-  ball.x = anchorMouse
+  anchorMouse = new Vec2(pos)
+  ball.x = anchorMouse.val
 
   verts[0].setForce([
-    (1.0 * anchorMouse[0] - verts[0].x[0]) * 10.0,
-    (1.0 * anchorMouse[1] - verts[0].x[1]) * 10.0
+    (1.0 * anchorMouse.val[0] - verts[0].x[0]) * 10.0,
+    (1.0 * anchorMouse.val[1] - verts[0].x[1]) * 10.0
   ]);
 }

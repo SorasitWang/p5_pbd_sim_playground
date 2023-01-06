@@ -8,9 +8,11 @@ class Constraint {
     }
 
     project(verts) {
-        if (this.ava)
+        if (this.ava) {
+            //console.log("pro")
             if (!this.f(verts))
                 this.ava = false
+        }
 
     }
 
@@ -34,10 +36,14 @@ class Sphere {
 
 class Vertex extends Sphere {
     constructor(x, v, m, f, rad = 5) {
+        if (x.constructor.name == "Vec2")
+            x = x.val
+        //console.log(x)
         super(x, rad, m)
         this.v = v;
         this.f = f;
         this.p = [x[0], x[1]];
+
     }
 
     setForce(f) {
@@ -122,10 +128,10 @@ class Line {
 }
 
 class Pond extends Line {
-    constructor(start, end, outside, p) {
+    constructor(start, end, outside, dense = 0.004) {
         super(start, end, outside)
         // https://www.thoughtco.com/table-of-densities-of-common-substances-603976
-        this.dense = 0.004
+        this.dense = dense
     }
 
     calBuoyantForce(sphere) {
@@ -139,19 +145,46 @@ class Pond extends Line {
         return new Vec2([0, -this.dense * G * a])
     }
 
-    calDragForce(sphere) {
+    calDragForce(sphere, deltaTime) {
         const Cd = 0.47 //of sphere
         const lengthInside = calLengthInside(sphere, this)
         //console.log(lengthInside)
         const v = new Vec2(sphere.v)
         let force = mulSc(mulVec2(v, v), 0.5 * Cd * this.dense * lengthInside)
         // direction opposite with sphere.v
-        force.val[0] *= -1 * Math.sign(sphere.v[0])
-        force.val[1] *= -1 * Math.sign(sphere.v[1])
+        //console.log(abs(sphere.v[0]), force.val[0] * deltaTime)
+        // not velocity more than current velocity (not make object move in opposite side) 
+        for (let i = 0; i < 2; i++) {
+            if (sphere.w * force.val[i] * deltaTime > abs(sphere.v[i]))
+                force.val[i] = abs(sphere.v[i]) / deltaTime * sphere.m
+            force.val[i] *= -1 * Math.sign(sphere.v[i])
+        }
+        //force.val[1] = min(abs(sphere.v[1]), sphere.w * force.val[1] * deltaTime)
         return force;
 
     }
 
 
+}
+
+class Net {
+
+    constructor(n, start, end) {
+        this.particles = []
+        this.pMass = 10;
+        this.pRad = 2.5
+        this.constraints = []
+        const posStart = new Vec2([...start])
+        const posEnd = new Vec2([...end])
+        let dir = normalizeVec2(subVec2(posEnd, posStart))
+        this.interval = subVec2(posStart, posEnd).size() / (n + 1)
+        this.particles.push(new Vertex(posStart, [0, 0], this.pMass, [0, 0], this.pRad))
+        for (let i = 1; i <= n; i++) {
+            this.particles.push(new Vertex(addVec2(posStart, mulSc(dir, this.interval * i)), [0, 0], this.pMass, [0, 0], this.pRad))
+        }
+        this.particles.push(new Vertex(posEnd, [0, 0], this.pMass, [0, 0], this.pRad))
+        this.posStart = new Vec2([...start])
+        this.posEnd = new Vec2([...end])
+    }
 
 }

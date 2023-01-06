@@ -73,3 +73,21 @@ function calLengthInside(sphere, line) {
         re = 2 * PI * sphere.rad - re
     return re
 }
+
+function clone(orig) {
+    return Object.assign(Object.create(Object.getPrototypeOf(orig)), orig);
+}
+
+function roundAny(val, digit = 2) {
+    const div = Math.pow(10, digit)
+    if (typeof (val) === "object" && val.constructor.name == "Array") {
+        const newArr = []
+        val.forEach(e => {
+            newArr.push(Math.round(e * div) / div)
+        });
+        return newArr
+    }
+    else if (typeof (val) === "number") {
+        return Math.round(val * div) / div
+    }
+}

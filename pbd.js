@@ -1,9 +1,18 @@
-
+function calForce(verts, dt) {
+    const invDtPow2 = 1 / (dt * dt)
+    for (let i = 0; i < verts.length; i++) {
+        for (let d = 0; d < verts[i].v.length; d++) {
+            let a = 2 * ((verts[i].p[d] - verts[i].x[d]) - verts[i].v[d] * dt) * invDtPow2
+            //verts[i].f[d] += verts[i].m * a
+            //console.log(verts[i].f[d])
+        }
+    }
+}
 function applyForce(verts, dt) {
     for (let i = 0; i < verts.length; i++) {
         for (let d = 0; d < verts[i].v.length; d++) {
             verts[i].v[d] = verts[i].v[d] + dt * verts[i].w * verts[i].f[d];
-            //console.log( verts[i].f[d]*dt * verts[i].w )
+            //console.log(dt, verts[i].w, verts[i].f[d])
         }
     }
 
@@ -52,6 +61,7 @@ function finalizeVertices(verts, dt) {
 }
 
 function PBDUpdate(vertices, constraints, deltaTime, nSteps = 4) {
+    calForce(vertices, deltaTime)
     applyForce(vertices, deltaTime);
 
     dampVelocity(vertices);
