@@ -1,4 +1,4 @@
-const N = 10;
+const N = 20;
 //const screenX = 800, screenY = 800;
 const screenX = 1000, screenY = 800;
 const G = 100

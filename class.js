@@ -1,4 +1,10 @@
 
+class Obj {
+    constructor(name) {
+        this.name = name
+    }
+}
+
 class Constraint {
     constructor(constraintType, updateFunc, stiffness) {
         this.ctype = constraintType;
@@ -7,10 +13,10 @@ class Constraint {
         this.ava = true
     }
 
-    project(verts) {
+    project(verts, dynamicObj = {}, deltaTime = 0.03) {
         if (this.ava) {
             //console.log("pro")
-            if (!this.f(verts))
+            if (!this.f(verts, dynamicObj, deltaTime))
                 this.ava = false
         }
 
@@ -21,10 +27,12 @@ class Constraint {
     }
 }
 
-class Sphere {
-    constructor(x, rad, m = 10) {
+class Sphere extends Obj {
+    constructor(name, x, rad, m = 10) {
+        super(name)
         this.x = x
         this.rad = rad
+        this.diameter = 2 * rad
         this.area = PI * rad * rad
         this.v = [0, 0]
         this.m = m
@@ -32,17 +40,24 @@ class Sphere {
         this.dense = m / this.area
         console.log(this.m, this.w)
     }
+
+    reDense(dense) {
+        this.m = dense * this.area
+        this.dense = dense
+        this.w = 1 / this.m
+    }
 }
 
 class Vertex extends Sphere {
-    constructor(x, v, m, f, rad = 5) {
+    constructor(name, x, v, m, f, rad = 5) {
         if (x.constructor.name == "Vec2")
             x = x.val
         //console.log(x)
-        super(x, rad, m)
+        super(name, x, rad, m)
         this.v = v;
         this.f = f;
         this.p = [x[0], x[1]];
+        this.prop = new Map()
 
     }
 
@@ -51,10 +66,28 @@ class Vertex extends Sphere {
     }
 }
 
+// Has bounce property 
+class Ball extends Vertex {
+    constructor(name, x, v, m, f, rad = 5, elasticity = 0.3) {
+        super(name, x, v, m, f, rad)
+        this.elasticity = elasticity
+        this.colState = new Map()
+    }
+
+    colSome(objs) {
+        this.colState = new Map()
+        objs.forEach(obj => {
+            this.colState.set(obj.name, true)
+        });
+    }
+}
 
 
-class Line {
-    constructor(start, end, outside) {
+
+class Line extends Obj {
+    constructor(name, start, end, outside) {
+        console.log(outside)
+        super(name)
         this.start = start
         this.end = end
         this.vec = normalizeVec2(new Vec2([end[1] - start[1], end[0] - start[0]]))
@@ -80,10 +113,13 @@ class Line {
 
     distance(point) {
         //console.log(point)
-        let sign = ground.side(point) != ground.outside ? -1 : 1
+        let sign = this.side(point) != this.outside ? -1 : 1
         return sign * abs(this.a * point[0] + this.b * point[1] + this.c) * this.distAB
     }
 
+    isCol(pos, offset) {
+        return this.distance(pos) < offset
+    }
     side(c) {
 
         return (this.end[0] - this.start[0]) * (c[1] - this.start[1]) - (this.end[1] - this.start[1]) * (c[0] - this.start[0]) > 0
@@ -92,7 +128,12 @@ class Line {
     isInside(pos) {
         return this.side(pos) != this.outside
     }
-
+    reflect(vector) {
+        vector = normalizeVec2(new Vec2(vector))
+        const normal = new Vec2(this.normal)
+        //console.log(vector)
+        return subVec2(vector, mulSc(this.normal, dotVec2(vector, new Vec2(this.normal)) * 2))
+    }
     //https://stackoverflow.com/a/22097446
     // project(p){
     //   let v = new Vec2(p)
@@ -128,8 +169,8 @@ class Line {
 }
 
 class Pond extends Line {
-    constructor(start, end, outside, dense = 0.004) {
-        super(start, end, outside)
+    constructor(name, start, end, outside, dense = 0.004) {
+        super(name, start, end, outside)
         // https://www.thoughtco.com/table-of-densities-of-common-substances-603976
         this.dense = dense
     }
@@ -152,8 +193,7 @@ class Pond extends Line {
         const v = new Vec2(sphere.v)
         let force = mulSc(mulVec2(v, v), 0.5 * Cd * this.dense * lengthInside)
         // direction opposite with sphere.v
-        //console.log(abs(sphere.v[0]), force.val[0] * deltaTime)
-        // not velocity more than current velocity (not make object move in opposite side) 
+        // opposite velocity can not more than current velocity (not make object move in opposite side) 
         for (let i = 0; i < 2; i++) {
             if (sphere.w * force.val[i] * deltaTime > abs(sphere.v[i]))
                 force.val[i] = abs(sphere.v[i]) / deltaTime * sphere.m
@@ -187,4 +227,32 @@ class Net {
         this.posEnd = new Vec2([...end])
     }
 
+}
+
+
+class Page {
+    constructor(startTime = 0) {
+        this.deltaTime = 0
+        this.lastUpdateTime = startTime
+    }
+
+    draw() {
+        throw new Error("draw() must be implemented")
+    }
+
+    setup() {
+        throw new Error("draw() must be implemented")
+    }
+
+    mouseMoved(mouseX, mouseY) {
+        console.log("mouseMoved() has not be implemented")
+    }
+
+    keyPressed(keyCode) {
+        console.log("keyPressed() has not be implemented")
+    }
+
+    clearPage() {
+        console.log("clearPage() has not be implemented")
+    }
 }

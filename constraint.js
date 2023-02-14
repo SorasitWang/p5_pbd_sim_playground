@@ -19,6 +19,7 @@ function updatePositionConstraintPosition(v, anchor, d, k) {
     //console.log(v.p, anchor, k)
     let mag = modVec2(new Vec2(v.p), anchor);
     mag = max(Epsilon, mag)
+    //console.log(anchor)
     let s = (mag - d) / mag;
     v.p[0] -= s * (v.p[0] - anchor.val[0]) * k;
     v.p[1] -= s * (v.p[1] - anchor.val[1]) * k;
@@ -70,7 +71,7 @@ function colMovable(v1, v2) {
     }
 
 }
-function updateColConstraintPosition(vert, k) {
+function updateColConstraintPosition(vert, k, flags, deltaTime) {
 
     c++
     for (let i = 0; i < vert.length; i++) {
@@ -79,21 +80,52 @@ function updateColConstraintPosition(vert, k) {
         // if (c%100 ==0 && i==verts.length-1){
         //   console.log(verts[i].p,ground.side(verts[i].p),verts[i].x,ground.side(verts[i].x))
         // }
-        if (isColGround(vert[i].p, vert[i].x)) {
+        if (flags.get("Ground")) {
+            const ground = flags.get("Ground")
+            //console.log(vert[i].v, ground.distance(vert[i].v))
+            if (ground.isCol(vert[i].x, vert[i].rad)) {
 
-            vert[i].p = ground.closetPoint(vert[i].p, dotRadius)
+                vert[i].prop.set("col_ground", true)
+            }
+            else {
+                //console.log(ground.distance(vert[i].x))
+                vert[i].prop.set("col_ground", false)
+            }
+            if (ground.isCol(vert[i].p, vert[i].rad)) {
+                //console.log("bounce")
+                vert[i].p = ground.closetPoint(vert[i].p, vert[i].rad)
+                if (flags.get("Ground_bounce") && vert[i].prop.get("col_ground") === false) {
+
+                    const prevV = new Vec2(vert[i].v)
+                    const magnitude = prevV.size()
+                    const newV = mulSc(normalizeVec2(ground.reflect(prevV)), 0.5 * magnitude)
+                    vert[i].p = addVec2(new Vec2(vert[i].p), mulSc(newV, deltaTime)).val
+                    // console.log("bounceGround", mulSc(newV, deltaTime).val)
+                    //vert[i].prop.set("col_ground", true)
+                }
+
+                //console.log("constGround", vert[i].p)
+            }
+            // else {
+
+            //     vert[i].prop.set("col_ground", false)
+            // }
         }
 
 
-
-        // col with obstruct
-        colSphere(obs, vert[i])
-
-        // self collision
-        for (let j = i + 1; j < vert.length; j++) {
-            colMovable(vert[i], vert[j]);
+        if (flags.get("Obs")) {
+            // col with obstruct
+            colSphere(flags.get("Obs"), vert[i])
         }
-        colMovable(vert[i], sphere_);
+        if (flags.get("Self")) {
+            // self collision
+            for (let j = i + 1; j < vert.length; j++) {
+                colMovable(vert[i], vert[j]);
+            }
+        }
+        if (flags.get("Env")) {
+            colMovable(vert[i], flags.get("Env"));
+        }
 
     }
 
@@ -143,9 +175,18 @@ function updateBendingConstraintPosition(v1, v2, v3, angle, stiffness, dd) {
     let v2_ = new Vec2(v2.p)
     let v3_ = new Vec2(v3.p)
     // find shouldV3
-    let slope = subVec2(v2_, v1_).val
-    let shouldV3 = addVec2(v2_, new Vec2([-slope[1], slope[0]]))
-    let center = mulSc(addVec2(addVec2(v1_, v2_), shouldV3), 0.3333333)
+    let slope = normalizeVec2(subVec2(v2_, v1_)).val
+    let dir = new Vec2([-slope[1], slope[0]])
+    if (slope[0] < 0)
+        dir = new Vec2([slope[1], -slope[0]])
+    let shouldV3 = addVec2(v2_, dir)
+    //let center = mulSc(addVec2(addVec2(v1_, v2_), shouldV3), 0.3333333)
+    let v1Changed = mulSc(v1_, 0.25)
+    let v2Changed = mulSc(v2_, 0.25)
+    let v3Changed = mulSc(v3_, 0.5)
+
+    let center = mulSc(addVec2(addVec2(v1_, v2_), v3_), 0.3333333)
+    // center = addVec2(addVec2(v1Changed, v2Changed), v3Changed)
     let dirCenter = subVec2(v3_, center)
 
     let distCenter = dirCenter.size()
@@ -180,16 +221,16 @@ function makePositionConstraint(v, anchor, d, stiffness) {
         stiffness);
 }
 
-function makeMousePosConstraint(v, anchor, d, stiffness) {
+function makeMousePosConstraint(v, d, stiffness) {
     return new Constraint(
         "position",
-        (verts) => updatePositionConstraintPosition(v, anchorMouse, d, stiffness),
+        (verts, dynamicObj) => updatePositionConstraintPosition(v, dynamicObj["anchorMouse"], d, stiffness),
         stiffness);
 }
-function makeColConstraint(vert, stiffness) {
+function makeColConstraint(vert, stiffness, flags) {
     return new Constraint(
         "ground",
-        (verts) => updateColConstraintPosition(vert, stiffness),
+        (verts, dynamicObj, deltaTime) => updateColConstraintPosition(vert, stiffness, flags, deltaTime),
         stiffness);
 }
 
@@ -201,7 +242,7 @@ function makeEnvColConstraint(envs, obj, stiffness) {
 }
 
 
-function makeBendintConsraints(v1, v2, v3, angle, stiffness, d) {
+function makeBendingConsraints(v1, v2, v3, angle, stiffness, d) {
     return new Constraint(
         "bending",
         (verts) => updateBendingConstraintPosition(verts[v1], verts[v2], verts[v3], angle, stiffness, d),

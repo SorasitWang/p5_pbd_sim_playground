@@ -7,13 +7,11 @@
 // }
 
 
-const Epsilon = 1e-2
-
 function isColGround(p, x, offset = 0) {
   // if proposed postion and current postion are on the opposite side
   // and current pos is near surface
 
-  return ground.distance(p) < dotRadius
+  return ground.distance(p) < x + offset
   //return pos[1]+2.5+offset >= screenY-groundH
 }
 
@@ -54,11 +52,11 @@ function initialize() {
   const D = 10.0;
   const NStep = 100;
   const K = 1;
-  // verts.push(ball);
-  //    for(let i=0;i<N;i++){
-  //     verts.push(new Vertex([screenX/2,-100-i*10],[0.0,0.0],0.5,[0.0,0.0]))
+  //verts.push(ball);
+  for (let i = 0; i < N; i++) {
+    verts.push(new Vertex([screenX / 2, -100 - i * 10], [0.0, 0.0], 0.5, [0.0, 0.0]))
 
-  //    }
+  }
 
   // rope
   for (let i = 0; i < N; i++) {
@@ -68,7 +66,7 @@ function initialize() {
   }
 
   for (let i = 1; i < N - 1; i++) {
-    constraints.push(makeBendintConsraints(i - 1, i, i + 1, 180, 0.1, D));
+    constraints.push(makeBendingConsraints(i - 1, i, i + 1, 180, 1, D));
   }
   constraints.push(makeMousePosConstraint(verts[0], anchorMouse, 100, K));
   constraints.push(makeColConstraint(verts, 1));
@@ -177,8 +175,8 @@ function draw() {
 
   calExternalForce();
   freeFall(deltaTime * SCALE_TIME);
-  //PBDUpdate(verts, constraints, deltaTime * SCALE_TIME, 300);
-  PBDUpdate([sphere_].concat(net.particles), net.constraints, deltaTime * SCALE_TIME, 300);
+  PBDUpdate(verts, constraints, deltaTime * SCALE_TIME, 100);
+  //PBDUpdate([sphere_].concat(net.particles), net.constraints, deltaTime * SCALE_TIME, 300);
   //PBDUpdate(, envConstraints, deltaTime * SCALE_TIME, 100);
 
 

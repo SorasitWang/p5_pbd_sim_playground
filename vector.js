@@ -1,9 +1,10 @@
 class Vec2 {
 
     constructor(pos) {
-        if (pos.constructor.name == "Vec2")
+        if (pos.constructor.name === "Vec2")
             this.val = pos.val
-        this.val = pos
+        else
+            this.val = pos
     }
 
     size() {

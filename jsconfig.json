@@ -5,6 +5,7 @@
   "include": [
     "*.js",
     "**/*.js",
-    "c:\\Users\\LEGION\\.vscode\\extensions\\samplavigne.p5-vscode-1.2.13\\p5types\\global.d.ts"
+    "c:\\Users\\LEGION\\.vscode\\extensions\\samplavigne.p5-vscode-1.2.13\\p5types\\global.d.ts",
+    "friction.ts"
   ]
 }
