@@ -81,35 +81,42 @@ function updateColConstraintPosition(vert, k, flags, deltaTime) {
         //   console.log(verts[i].p,ground.side(verts[i].p),verts[i].x,ground.side(verts[i].x))
         // }
         if (flags.get("Ground")) {
-            const ground = flags.get("Ground")
-            //console.log(vert[i].v, ground.distance(vert[i].v))
-            if (ground.isCol(vert[i].x, vert[i].rad)) {
+            const grounds = flags.get("Ground")
+            grounds.forEach(ground => {
+                //console.log(vert[i].v, ground.distance(vert[i].v))
+                // if (ground.isCol(vert[i].p, vert[i].rad)) {
 
-                vert[i].prop.set("col_ground", true)
-            }
-            else {
-                //console.log(ground.distance(vert[i].x))
-                vert[i].prop.set("col_ground", false)
-            }
-            if (ground.isCol(vert[i].p, vert[i].rad)) {
-                //console.log("bounce")
-                vert[i].p = ground.closetPoint(vert[i].p, vert[i].rad)
-                if (flags.get("Ground_bounce") && vert[i].prop.get("col_ground") === false) {
+                //     //vert[i].prop.set("col_ground", true)
+                // }
+                // else {
+                //     //console.log(ground.distance(vert[i].x))
+                //     vert[i].prop.set("col_ground", false)
+                // }
 
-                    const prevV = new Vec2(vert[i].v)
-                    const magnitude = prevV.size()
-                    const newV = mulSc(normalizeVec2(ground.reflect(prevV)), 0.5 * magnitude)
-                    vert[i].p = addVec2(new Vec2(vert[i].p), mulSc(newV, deltaTime)).val
-                    // console.log("bounceGround", mulSc(newV, deltaTime).val)
-                    //vert[i].prop.set("col_ground", true)
+                if (ground.isCol(vert[i].p, vert[i].rad)) {
+                    //vert[i].x = ground.closetPoint(vert[i].p, vert[i].rad)
+                    if (flags.get("Ground_bounce") && vert[i].prop.get("col_ground") === false) {
+                        if (new Vec2(vert[i].v).size() >= 4 * G * deltaTime) {
+                            const reflect = ground.reflect(vert[i].v)
+                            console.log("still bounce " + reflect.size() / G / deltaTime)
+                            // compute in advance
+                            vert[i].p = addVec2(new Vec2(vert[i].x), mulSc(reflect, 0.75 * deltaTime)).val
+                        }
+
+                    }
+                    vert[i].prop.set("col_ground", true)
+                    if (ground.isCol(vert[i].p, vert[i].rad)) {
+                        vert[i].p = ground.closetPoint(vert[i].p, vert[i].rad)
+                        //if (ground.isCol(vert[i].x, vert[i].p, vert[i].rad))
+
+
+                    }
                 }
+                else {
+                    vert[i].prop.set("col_ground", false)
+                }
+            })
 
-                //console.log("constGround", vert[i].p)
-            }
-            // else {
-
-            //     vert[i].prop.set("col_ground", false)
-            // }
         }
 
 

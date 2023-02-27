@@ -92,7 +92,7 @@ class Line extends Obj {
         this.end = end
         this.vec = normalizeVec2(new Vec2([end[1] - start[1], end[0] - start[0]]))
         this.invVecLS = 1 / dotVec2(this.vec, this.vec)
-
+        this.length = subVec2(new Vec2(start), new Vec2(end)).size()
         this.computeProp(start, end)
 
 
@@ -113,12 +113,20 @@ class Line extends Obj {
 
     distance(point) {
         //console.log(point)
-        let sign = this.side(point) != this.outside ? -1 : 1
+        const sign = this.side(point) != this.outside ? -1 : 1
         return sign * abs(this.a * point[0] + this.b * point[1] + this.c) * this.distAB
     }
 
     isCol(pos, offset) {
-        return this.distance(pos) < offset
+        const onLine = abs(this.distance(pos)) < offset
+        const inRange = subVec2(new Vec2(pos), new Vec2(this.start)).size() <= this.length && subVec2(new Vec2(pos), new Vec2(this.end)).size() <= this.length
+        return onLine && inRange
+    }
+
+    isCol(pos, proposedPos, offset) {
+
+        const inRange = subVec2(new Vec2(pos), new Vec2(this.start)).size() <= this.length && subVec2(new Vec2(pos), new Vec2(this.end)).size() <= this.length
+        return this.side(pos) !== this.side(proposedPos) && inRange
     }
     side(c) {
 
@@ -129,10 +137,14 @@ class Line extends Obj {
         return this.side(pos) != this.outside
     }
     reflect(vector) {
-        vector = normalizeVec2(new Vec2(vector))
+        //console.log("a", vector)
+        vector = new Vec2(vector)
+        //console.log("b", vector, vector.val)
         const normal = new Vec2(this.normal)
+        c//onsole.log("normal", normal, vector)
         //console.log(vector)
-        return subVec2(vector, mulSc(this.normal, dotVec2(vector, new Vec2(this.normal)) * 2))
+        return subVec2(vector, mulSc(normal, dotVec2(vector, normal) * 2))
+        //return vector
     }
     //https://stackoverflow.com/a/22097446
     // project(p){

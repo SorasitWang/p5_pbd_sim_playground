@@ -1,7 +1,7 @@
 const N = 20;
 //const screenX = 800, screenY = 800;
 const screenX = 1000, screenY = 800;
-const G = 100
+const G = 500
 const dotRadius = 2.5;
 const dotMass = 1
 const dotW = 1 / dotMass

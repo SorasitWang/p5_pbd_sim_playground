@@ -11,7 +11,7 @@ class Rope extends Page {
 
         this.groundH = 300;
         this.ground = new Line("ground", [0, screenY - 500], [screenX, screenY - 200], [0, 0])
-        this.pond = new Pond("pond", [0, screenY - 400], [screenX, screenY - 400], [0, 0], 0.04)
+        this.pond = new Pond("pond", [0, screenY - 400], [screenX, screenY - 400], [0, 0], 0.01)
         this.ball = new Sphere("ball", [0, 0], 10)
         this.obs = new Sphere("obs", [500, 500], 30)
         this.state = 0;
@@ -33,7 +33,7 @@ class Rope extends Page {
         const flag = new Map()
         flag.set("Self", true)
         flag.set("Obs", this.obs)
-        flag.set("Ground", this.ground)
+        flag.set("Ground", [this.ground])
         this.constraints.push(makeColConstraint(this.verts, 1, flag));
         this.setAnchor([400, 400])
         this.isInitialized = true;

@@ -1,8 +1,9 @@
 const pageMap = [
     (startTime) => { return new FreeFall(startTime) },
-    (startTime) => { return new Rope(startTime) }
+    (startTime) => { return new Rope(startTime) },
+    (startTime) => { return new Movement(startTime) }
 ]
-let pageIdx = 1
+let pageIdx = 0
 let current = pageMap[pageIdx]()
 
 function setup() {
