@@ -1,5 +1,5 @@
 # p5_pbd_sim_playground
-Playground for 2d pbd and some physics sim in p5.js
+Playground for 2D pbd and some physics sim in p5.js
 
 
 ### Constraint :
